@@ -7,12 +7,10 @@ import threading
 import simulator
 import player
 
-"""
-COISAS PARA FAZER NO FUTURO
-    ADICIONAR ATRIBUIÇÕES AOS PONTOS (1.2X PARA WIN \ -X POR FALTA)
-"""
+#COISAS PARA FAZER NO FUTURO = ADICIONAR ATRIBUIÇÕES AOS PONTOS (1.2X PARA WIN \ -X POR FALTA)
 
-NUMERO_TIMES = 2
+NUMERO_TIMES = 4
+NUMERO_PLAYERS = 3
 
 """
 SIMULADOR DE UMA TEMPORADA DA NBA
@@ -21,15 +19,16 @@ SIMULADOR DE UMA TEMPORADA DA NBA
 def escolher_jogador_valido(jogador_draft, prompt):
     while True:
         nome = input(prompt)
-        jogador = teams[0].retornar_jogador(nome)
-
-        if not jogador:
-            jogador = teams[1].retornar_jogador(nome)
+        jogador = None
+        for i in range(NUMERO_TIMES):
+            if not jogador:
+                jogador = teams[i].retornar_jogador(nome)
 
         if jogador and jogador_draft.add_jogador(jogador):
             break
 
         print('Escolha inválida. Tente novamente.')
+
 
 #ESCOLHA DOS TIMES PARA O SIMULADOR
 csv=pd.read_csv("simulator/data/list_nba_players.csv")
@@ -42,49 +41,25 @@ matches = team.gerar_confrontos(NUMERO_TIMES)
 
 
 
-#simulator.simulator(teams[0], teams[1])
-
 ## PROCESSO DE DRAFT DE JOGADORES
-p1 = player.Player(1)
-p2 = player.Player(2)
+players = list()
+[players.append(player.Player(i+1)) for i in range(NUMERO_PLAYERS)]
 
-team.Time.exibir_time(teams[0])
-team.Time.exibir_time(teams[1])
+[teams[i].exibir_time() for i in range(NUMERO_TIMES)]
 
-for i in range(3):
+for i in range(2): # 5 NO JOGO NORMAL, 3 PARA TESTE RAPIDO
     print('SELEÇÃO', i)
 
-    ##PLAYER 1 SELECIONA UM JOGADOR
-    escolher_jogador_valido(p1, 'P1: seleciona: ')
+    for i in range(NUMERO_PLAYERS):
+        escolher_jogador_valido(players[i], f'P{i+1}: seleciona: ')
 
-    escolher_jogador_valido(p2, 'P2: seleciona: ')
-
-p1.exibir_draft()
-p2.exibir_draft()
-
+[players[i].exibir_draft() for i in range(NUMERO_PLAYERS)]
 ##DRAFT FEITO
 
 
-##COMEÇAR AS SIMULAÇÕES
-for i in range(2):
-    simulator.simulator(teams[0], teams[1])
-
-    ##ATUALIZAR A PONTUAÇÃO DOS JOGADORES NOS DRAFTS
-    for jogador_draft in p1.draft:
-        p1.atribuir_points(jogador_draft)
-
-    for jogador_draft in p2.draft:
-        p2.atribuir_points(jogador_draft)
-
-    p1.exibir_draft()
-    p2.exibir_draft()
-
-
-
-##RODANDO TODOS OS JOGOS DA TEMPORADA
-
-"""for rodada in range(matches.shape[0]):
-    print("INICIANDO A RODADA:", rodada)
+##INICIO DA TEMPORADA
+for rodada in range(matches.shape[0]):
+    print("INICIANDO A RODADA:", rodada+1)
 
     threads = []
 
@@ -94,38 +69,21 @@ for i in range(2):
             args=(teams[time_a], teams[time_b]) # Passa os times como argumentos
         )
         
-        threads.append(jogo_thread)
+        threads.append((jogo_thread, time_a, time_b))
+        #[simulator.reset_team(teams[i]) for i in range(NUMERO_TIMES)]
         jogo_thread.start()
 
-    for jogo_thread in threads:
+    for jogo_thread, time_a, time_b in threads:
         jogo_thread.join()
+
+    
+    for i in range(NUMERO_PLAYERS):
+        for jogador_draft in players[i].draft:
+            players[i].atribuir_points(jogador_draft)
+    [simulator.reset_team(teams[i]) for i in range(NUMERO_TIMES)]
         
-    print(f"--- TODOS OS JOGOS DA RODADA {rodada} ACABARAM ---")"""
+    print(f"--- TODOS OS JOGOS DA RODADA {rodada+1} ACABARAM ---")
+    [players[i].exibir_draft() for i in range(NUMERO_PLAYERS)]
+##FINAL DA TEMPORADA
 
-
-
-
-
-
-
-
-#team.exibir_simples(teams[0], teams[1])
-
-key = f"Game_{random.randrange(100,199)}"
-
-#CRIANDO JSON
-match = {
-    'tipo': "INICIO",
-    'match': f"{teams[0].nome} X {teams[1].nome}",
-    teams[0].nome:{
-        'titulares': teams[0].exibir_titulares(),
-        'reservas': teams[0].exibir_resevas()
-    },
-    teams[1].nome:{
-        'titulares': teams[1].exibir_titulares(),
-        'reservas': teams[1].exibir_resevas()
-    }
-}
-
-match_event = json.dumps(match, ensure_ascii=False)
-#print(match_event)
+##RESULTAODS

@@ -24,12 +24,8 @@ def simulator(time_A, time_B):
     print(match_event) #PRODUCE EVENT
 
     # Resetar placares e pontos dos jogadores para a partida atual
-    time_A.pontos = 0
-    time_B.pontos = 0
-    for jogador in (time_A.titulares + time_A.reservas):
-        jogador.pts = 0
-    for jogador in (time_B.titulares + time_B.reservas):
-        jogador.pts = 0
+    #reset_team(time_A)
+    #reset_team(time_B)
 
     time_ataque, time_defesa = time_A, time_B
     #COMEÇAR O JOGO
@@ -69,7 +65,7 @@ def simulator(time_A, time_B):
                     'jogador_in': jogador2.Player,
                 }
                 event_subs_json = json.dumps(event_subs, ensure_ascii=False)
-                print(event_subs_json)
+                #print(event_subs_json)
 
             #TURNOVER
             if(jogada<0.136):
@@ -125,10 +121,10 @@ def simulator(time_A, time_B):
 
             if(event!=model):
                 event_json = json.dumps(event, ensure_ascii=False)
-                print(event_json)
+                #print(event_json)
 
             #IDEIA DE TEMPO REAL
-            tempo.sleep(0.1)
+            #tempo.sleep(0.1)
 
     #CRIANDO JSON
     match_end = {
@@ -144,3 +140,9 @@ def simulator(time_A, time_B):
     #STATUS FINAL DA PARTIDA
     print("\nFinal de Partida!\nEstatísticas Finais:\n")
     manipulator.exibir_partida(time_A, time_B)
+
+
+def reset_team(time):
+    time.pontos = 0
+    for jogador in (time.titulares + time.reservas):
+        jogador.pts = 0
