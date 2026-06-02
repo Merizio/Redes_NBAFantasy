@@ -42,6 +42,17 @@ class Time:
         return [n.Player for n in self.titulares]
     def exibir_resevas(self):
         return [n.Player for n in self.reservas]
+    
+    def retornar_jogador(self, nome):
+        nome_busca = nome.strip().lower()
+
+        jogador = next((i for i in self.titulares if nome_busca in i.Player.lower()), None)
+        if not jogador:
+            jogador = next((i for i in self.reservas if nome_busca in i.Player.lower()), None)
+
+        return jogador
+
+
 
 
 def escolher_times(nba, qtd):

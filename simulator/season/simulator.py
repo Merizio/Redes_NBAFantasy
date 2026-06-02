@@ -23,6 +23,14 @@ def simulator(time_A, time_B):
 
     print(match_event) #PRODUCE EVENT
 
+    # Resetar placares e pontos dos jogadores para a partida atual
+    time_A.pontos = 0
+    time_B.pontos = 0
+    for jogador in (time_A.titulares + time_A.reservas):
+        jogador.pts = 0
+    for jogador in (time_B.titulares + time_B.reservas):
+        jogador.pts = 0
+
     time_ataque, time_defesa = time_A, time_B
     #COMEÇAR O JOGO
     print("\nComeça a Partida")
