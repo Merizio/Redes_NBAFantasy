@@ -1,4 +1,4 @@
-import team as manipulator
+from season import team as manipulator
 import pandas as pd
 import random
 import time as tempo
