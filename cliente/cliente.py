@@ -9,24 +9,28 @@ PORT = 8080
 
 def ouvir_servidor(cliente_socket):
     """
-    THREAD 2: Esta função vai correr em paralelo.
-    O único trabalho dela é receber dados do servidor e mostrá-los no ecrã.
+    Recebe mensagens do servidor
     """
+    buffer = ""
     while True:
         try:
-            # Fica à espera de receber dados (bloqueia apenas esta thread)
-            dados_recebidos = cliente_socket.recv(4096).decode('utf-8')
-            
-            # Se receber vazio, significa que o servidor foi abaixo
-            if not dados_recebidos:
+            dados = cliente_socket.recv(4096)
+            if not dados:
                 print("\n[AVISO] O servidor encerrou a conexão.")
                 break
-                
-            # Tenta ler o JSON e mostrar a mensagem
-            # (Aqui depois vais processar se é CHAT, se é DRAFT, etc.)
-            pacote = json.loads(dados_recebidos)
-            print(f"\n[MENSAGEM DO SERVIDOR]: {pacote}")
-            
+
+            buffer += dados.decode('utf-8')
+            while '\n' in buffer:
+                linha, buffer = buffer.split('\n', 1)
+                if not linha.strip():
+                    continue
+                try:
+                    pacote = json.loads(linha)
+                except json.JSONDecodeError as e:
+                    print(f"\n[ERRO] JSON inválido do servidor: {e}")
+                    continue
+                print(f"\n[MENSAGEM DO SERVIDOR]: {pacote}")
+
         except Exception as e:
             print(f"\n[ERRO NA ESCUTA] A conexão foi perdida: {e}")
             break
@@ -36,7 +40,7 @@ def ouvir_servidor(cliente_socket):
 
 def iniciar_cliente():
     """
-    THREAD 1 (Principal): Lida com a conexão inicial e com o teclado do utilizador.
+    Envia Mensagens para o servidor
     """
     cliente_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     
@@ -45,12 +49,9 @@ def iniciar_cliente():
         print("=== BEM-VINDO AO FANTASY NBA ===")
         print("Escreve a tua mensagem ou comando e prime ENTER (ou 'sair' para fechar).\n")
         
-        # --- A MAGIA ACONTECE AQUI ---
-        # Criamos a Thread de Escuta e passamos o socket como argumento
+
+        # Criamos a Thread de Escuta
         thread_escuta = threading.Thread(target=ouvir_servidor, args=(cliente_socket,))
-        
-        # Definir como Daemon significa que esta thread morre automaticamente 
-        # se a Thread Principal (o teu teclado) for encerrada.
         thread_escuta.daemon = True 
         thread_escuta.start()
         
