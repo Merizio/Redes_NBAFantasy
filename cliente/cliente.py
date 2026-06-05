@@ -25,10 +25,19 @@ class ClienteFantasy:
                 # Se a vaga estiver vazia (None no Python, null no JSON), exibe Vaga Livre
                 print(f"  {jogador if jogador is not None else '[Vaga Livre]'}")
 
+    def exibir_resultados(self, lista):
+        #lista = json.loads(drafts)
+
+        for  chave, jogadores in lista.items():
+            print(f"---{chave}---")
+            for jogador in jogadores:
+                print(jogador)
+
+
     def ouvir_servidor(self):
         buffer = ""
-        while True:
-            try:
+        try:
+            while True:
                 dados = self.cliente_socket.recv(4096)
                 if not dados:
                     print("\n[AVISO] O servidor encerrou a conexão.")
@@ -55,6 +64,9 @@ class ClienteFantasy:
                             # Extrai o ID do texto (Ex: "Player_1")
                             self.meu_id = pacote.get('dados').split("Você é o ")[1].replace(".", "").strip()
 
+
+
+                        ## FUNÇÕES DE DRAFT
                     ## TIMES DA TEMPORADA
                     elif tipo == "DRAFT_LISTA":
                         self.exibir_draft(pacote.get('jogadores_disponiveis'))
@@ -72,7 +84,19 @@ class ClienteFantasy:
                             print(f"\n⌛ Aguardando o turno de {jogador_da_vez}...")
 
                     elif tipo == "DRAFT_SUCESSO":
-                        print(f"O {pacote.get['quem_escolheu']} escolheu o {pacote.get['jogador_escolhido']}")
+                        print(f"O {pacote.get('quem_escolheu')} escolheu o {pacote.get('jogador_escolhido')}")
+
+                    elif tipo == "FIM_DRAFT":
+                        print(f"Fim do Draft!\n")
+                        self.exibir_resultados(pacote.get('lista'))
+
+
+                    elif tipo == "RESULTADO_FINAL":
+                        for  chave, resultado in pacote.get('lista').items():
+                            print(f"---{chave}º Lugar---")
+                            print(resultado)
+
+
 
                     ## MENSAGENS DO CHAT
                     elif tipo == "CHAT_BROADCAST":
@@ -82,9 +106,13 @@ class ClienteFantasy:
                     elif tipo == "ERRO":
                         print(f"\n[X] ERRO: {pacote.get('msg')}")
 
-            except Exception as e:
-                print(f"\n[ERRO NA ESCUTA] A conexão foi perdida: {e}")
-                break
+        except Exception as e:
+            print(f"\n[ERRO NA ESCUTA] A conexão foi perdida: {e}")
+        finally:
+            print("\nDesconectado do Fantasy NBA.")
+            import os
+            os._exit(0)
+
                 
         sys.exit(0)
 
@@ -108,16 +136,9 @@ class ClienteFantasy:
                 if not mensagem_texto:
                     continue
 
-                # Se o cliente tentar digitar algo mas NÃO for a vez dele
-                if not self.e_minha_vez:
-                    pacote_envio = {
-                        "tipo": "CHAT",
-                        "mensagem": mensagem_texto
-                    }
-                    self.cliente_socket.sendall((json.dumps(pacote_envio) + '\n').encode('utf-8'))
-
-                # Se for a vez dele, constrói o pacote de escolha
-                elif self.e_minha_vez:
+                #if self.rodadas>0:
+                    # Se for a vez dele, constrói o pacote de escolha
+                if self.e_minha_vez:
                     pacote_envio = {
                         "tipo": "DRAFT_ESCOLHA",
                         "jogador": mensagem_texto
@@ -126,17 +147,30 @@ class ClienteFantasy:
                     
                     # Reseta temporariamente a flag local até que o servidor valide e mude o turno
                     self.e_minha_vez = False
+                
+                # Se o cliente tentar digitar algo mas NÃO for a vez dele
+                else:
+                    pacote_envio = {
+                        "tipo": "CHAT",
+                        "mensagem": mensagem_texto
+                    }
+                    self.cliente_socket.sendall((json.dumps(pacote_envio) + '\n').encode('utf-8'))
+
+                ## FIM DO DRAFT
+
+                
 
         except ConnectionRefusedError:
             print("[ERRO] Não foi possível ligar ao servidor.")
         finally:
-            self.cliente_socket.close()
-            print("Desconectado do Fantasy NBA.")
+            print("\nDesconectado do Fantasy NBA.")
+            import os
+            os._exit(0)
 
 if __name__ == "__main__":
     # Constantes definidas na inicialização
     HOST = '127.0.0.1' 
-    PORT = 8080
+    PORT = 6789
     
     # Instanciamos o objeto do cliente e iniciamos a conexão
     cliente_ativo = ClienteFantasy(HOST, PORT)
