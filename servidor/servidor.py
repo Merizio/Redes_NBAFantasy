@@ -158,7 +158,7 @@ class ServidorFantasy:
                         'jogador_in': jogador2.Player,
                     }
                     event_subs_json = json.dumps(event_subs, ensure_ascii=False)
-                    #print(event_subs_json)
+                    print(event_subs_json)
 
                 #TURNOVER
                 if(jogada<0.136):
@@ -215,7 +215,7 @@ class ServidorFantasy:
 
                 if(event!=model):
                     event_json = json.dumps(event, ensure_ascii=False)
-                    #print(event_json)
+                    print(event_json)
 
                 #IDEIA DE TEMPO REAL
                 #time.sleep(0.05)
