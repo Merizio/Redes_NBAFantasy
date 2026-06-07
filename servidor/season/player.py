@@ -2,8 +2,9 @@ from season import team
 import numpy as np
 
 class Player:
-    def __init__(self, id, conexao):
+    def __init__(self, id, nick, conexao):
         self.id = id
+        self.nick = nick
         self.conexao = conexao
         self.draft = list()
         self.points = 0

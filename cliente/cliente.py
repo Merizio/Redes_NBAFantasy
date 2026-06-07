@@ -2,6 +2,7 @@ import socket
 import threading
 import json
 import sys
+import time
 
 # --- CLASSE PRINCIPAL DO CLIENTE ---
 class ClienteFantasy:
@@ -9,6 +10,9 @@ class ClienteFantasy:
         # Configurações de conexão
         self.host = host
         self.port = port
+
+        # Flags
+        self.nick_confirmado = False
         
         # Estado Local do Cliente
         self.meu_id = None          # Será preenchido quando o servidor nos disser quem somos
@@ -18,12 +22,14 @@ class ClienteFantasy:
     def exibir_draft(self, times):
         retorno = json.loads(times)
 
+        print("\nATLETAS DISPONÍVEIS:")
         for chave_time, time_info in retorno["dados"].items():
-            print(f"\n--- {time_info['nome']} ---")
+            print(f"--- {time_info['nome']} ---")
             print("Elenco:")
             for jogador in time_info["elenco"]:
                 # Se a vaga estiver vazia (None no Python, null no JSON), exibe Vaga Livre
                 print(f"  {jogador if jogador is not None else '[Vaga Livre]'}")
+            print()
 
     def exibir_resultados(self, lista):
         #lista = json.loads(drafts)
@@ -64,7 +70,9 @@ class ClienteFantasy:
                             # Extrai o ID do texto (Ex: "Player_1")
                             self.meu_id = pacote.get('dados').split("Você é o ")[1].replace(".", "").strip()
 
-
+                    ## (Coloque isso junto com os outros if/elif)
+                    elif tipo == "SOLICITAR_NICK":
+                        print("Conectado! Digite o seu Nickname para entrar na sala: ")
 
                         ## FUNÇÕES DE DRAFT
                     ## TIMES DA TEMPORADA
@@ -84,18 +92,40 @@ class ClienteFantasy:
                             print(f"\n⌛ Aguardando o turno de {jogador_da_vez}...")
 
                     elif tipo == "DRAFT_SUCESSO":
-                        print(f"O {pacote.get('quem_escolheu')} escolheu o {pacote.get('jogador_escolhido')}")
+                        print(f"\n[SERVIDOR]:O {pacote.get('quem_escolheu')} escolheu o {pacote.get('jogador_escolhido')}")
 
                     elif tipo == "FIM_DRAFT":
-                        print(f"Fim do Draft!\n")
+                        print(f"\nDRAFT:")
                         self.exibir_resultados(pacote.get('lista'))
+
+                    elif tipo == "INICIO_SEASON":
+                        print("[SERVIDOR]: Iniciando as simulações dos confrontos...")
+                        time.sleep(1)
+                        print("\nEm 3..")
+                        time.sleep(1)
+                        print("\nEm 2..")
+                        time.sleep(1)
+                        print("\nEm 1..")
+                        time.sleep(1)
+
+                    elif tipo == "FINAL_RODADA":
+                        print(f"\n--- TODOS OS JOGOS DA RODADA {pacote.get('rodada')} ACABARAM ---")
+                        for rodada in pacote.get('match'):
+                            print(f"     {rodada.get('resultado')}")
 
 
                     elif tipo == "RESULTADO_FINAL":
-                        for  chave, resultado in pacote.get('lista').items():
-                            print(f"---{chave}º Lugar---")
-                            print(resultado)
+                        print("\n---RESULTADOS FINAIS---\n")
 
+                        lista_podio = list(pacote.get('lista').items())
+                        total_jogadores = len(lista_podio)
+
+                        for  i, (chave, resultado) in enumerate(reversed(lista_podio)):
+                            print(f"Em {total_jogadores-i}º Lugar:")
+                            time.sleep(1)
+                            print(f"---{chave}---")
+                            print(resultado)
+                            time.sleep(2)
 
 
                     ## MENSAGENS DO CHAT
@@ -136,9 +166,20 @@ class ClienteFantasy:
                 if not mensagem_texto:
                     continue
 
+                # definição do apelido
+                if not self.nick_confirmado:
+                    pacote_envio = {
+                        "tipo": "REGISTRAR_NICK",
+                        "nick": mensagem_texto
+                    }
+                    self.cliente_socket.sendall((json.dumps(pacote_envio) + '\n').encode('utf-8'))
+                    
+                    self.nick_confirmado = True
+                    self.meu_id = mensagem_texto
+
                 #if self.rodadas>0:
                     # Se for a vez dele, constrói o pacote de escolha
-                if self.e_minha_vez:
+                elif self.e_minha_vez:
                     pacote_envio = {
                         "tipo": "DRAFT_ESCOLHA",
                         "jogador": mensagem_texto
@@ -163,7 +204,7 @@ class ClienteFantasy:
         except ConnectionRefusedError:
             print("[ERRO] Não foi possível ligar ao servidor.")
         finally:
-            print("\nDesconectado do Fantasy NBA.")
+            #print("\nDesconectado do Fantasy NBA.")
             import os
             os._exit(0)
 

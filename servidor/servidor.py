@@ -11,9 +11,9 @@ import random
 # Configurações do Servidor
 HOST = 'localhost'
 PORT = 6789
-MAX_CLIENTES = 2
+MAX_CLIENTES = 3
 NUMERO_TIMES = 4
-MAX_RODADAS = 3
+MAX_RODADAS = 2
 
 # --- FUNÇÕES PARA SUPORTE ---
 def escolha_times():
@@ -51,7 +51,7 @@ class ServidorFantasy:
         cliente = self.clientes_conectados[self.turno_atual_index]
         msg = {
             "tipo": "TURNO_INFO",
-            "jogador_da_vez": cliente.id
+            "jogador_da_vez": cliente.nick
         }
         self.broadcast(msg)
 
@@ -70,8 +70,8 @@ class ServidorFantasy:
         
     def resultado_parcial(self):
         dados_finais = {
-            manager.id: [
-                f"{jogador.Player} | {jogador.Pos} | {manager.pointlist[idx]:.2f}"
+            manager.nick: [
+                f"{jogador.Player:>25} | {jogador.Pos:<2} | {manager.pointlist[idx]:.2f}"
                 for idx, jogador in enumerate(manager.draft)
             ]
             for manager in self.clientes_conectados
@@ -91,8 +91,8 @@ class ServidorFantasy:
             print(f"{i+1}º Lugar!\n{resultado[i].id} = {(resultado[i].points/MAX_RODADAS):.1f} pontos")
 
         resultados = {
-            i+1:
-                f"{resultado[i].id} = {(resultado[i].points/MAX_RODADAS):.1f} pontos"
+            self.clientes_conectados[i].nick:
+                f"{(resultado[i].points/MAX_RODADAS):.1f} pontos"
             for i in range(MAX_CLIENTES)
         }
         self.broadcast({
@@ -218,7 +218,7 @@ class ServidorFantasy:
                     #print(event_json)
 
                 #IDEIA DE TEMPO REAL
-                #tempo.sleep(0.1)
+                #time.sleep(0.05)
 
         if time_A.pontos <time_B.pontos:
             for jogador in (time_B.titulares + time_B.reservas):
@@ -229,18 +229,22 @@ class ServidorFantasy:
 
         #CRIANDO JSON
         match_end = {
-            'tipo': "FINAL",
+            'tipo': "FINAL_RODADA",
             'match': f"{time_A.nome} {time_A.pontos} X {time_B.pontos} {time_B.nome}",
         }
 
         match_event_end = json.dumps(match_end, ensure_ascii=False)
 
+        #self.broadcast(match_event_end)
 
         print(match_event_end) #PRODUCE EVENT
 
         #STATUS FINAL DA PARTIDA
         print("\nFinal de Partida!\nEstatísticas Finais:\n")
         team.exibir_partida(time_A, time_B)
+
+        #print(f" RETORNO DA FUNÇÃO SIMULADOR{time_A.nome} {time_A.pontos} X {time_B.pontos} {time_B.nome}")
+        return f"{time_A.nome} {time_A.pontos} X {time_B.pontos} {time_B.nome}"
 
 
     def reset_team(self, time):
@@ -315,7 +319,7 @@ class ServidorFantasy:
                                     # Avisa todo mundo da escolha
                                     self.broadcast({
                                         "tipo": "DRAFT_SUCESSO",
-                                        "quem_escolheu": cliente.id,
+                                        "quem_escolheu": cliente.nick,
                                         "jogador_escolhido": encontrado.Player,
                                     })
                                     
@@ -355,23 +359,33 @@ class ServidorFantasy:
         contador_ids = 1
         while len(self.clientes_conectados) < MAX_CLIENTES:
             conexao, endereco = servidor.accept()
-            id_jogador = f"Player_{contador_ids}"
 
-            novo_Player = player.Player(id_jogador, conexao)
+            conexao.sendall((json.dumps({"tipo": "SOLICITAR_NICK"}) + '\n').encode('utf-8'))
+
+            dados = conexao.recv(1024)
+            if dados:
+                pacote = json.loads(dados.decode('utf-8').strip())
+                nick_escolhido = pacote.get("nick", f"Player_{len(self.clientes_conectados)+1}")
+            else:
+                continue
+
+            novo_Player = player.Player(contador_ids, nick_escolhido, conexao)
             self.clientes_conectados.append(novo_Player)
 
             contador_ids += 1
             
-            print(f"[NOVA CONEXÃO] {id_jogador} entrou. ({len(self.clientes_conectados)}/{MAX_CLIENTES})")
+            print(f"[NOVA CONEXÃO] ({contador_ids}) {nick_escolhido} entrou. ({len(self.clientes_conectados)}/{MAX_CLIENTES})")
             
             conexao.sendall((json.dumps({
                 "tipo": "SERVIDOR", 
-                "dados": f"Na sala de espera ({len(self.clientes_conectados)}/{MAX_CLIENTES}). Você é o {novo_Player.id}."
+                "dados": f"Na sala de espera ({len(self.clientes_conectados)}/{MAX_CLIENTES}). Você é o {novo_Player.nick}."
             }) + '\n').encode('utf-8'))
 
 
         # --- FASE 2: O JOGO COMEÇA ---
-        print("\n[SALA CHEIA] A iniciar o jogo!")
+        while 1:
+            if input("\n[SALA CHEIA] start para iniciar o jogo!: ")=="start":
+                break
 
         times_season = {
             f"Time_{i}": {
@@ -405,7 +419,13 @@ class ServidorFantasy:
         # O main loop fica pausado aqui até alguém chamar self.draft_concluido.set()
         self.draft_concluido.wait() 
         
-        print("\n[SERVIDOR] Draft finalizado! Iniciando as simulações dos confrontos...")
+        print("\n[SERVIDOR] Draft finalizado!")
+        while 1:
+            if input("\n[SERVIDOR] Digite play para iniciar a simulação!: ")=="play":
+                self.broadcast({'tipo': "INICIO_SEASON"})
+                break
+        
+        print("Iniciando as simulações dos confrontos...")
         time.sleep(1)
         print("\nEm 3..")
         time.sleep(1)
@@ -419,11 +439,20 @@ class ServidorFantasy:
         for rodada in range(self.matches.shape[0]):
             print("INICIANDO A RODADA:", rodada+1)
 
+            resultados_jogos = list()
+            def rodar_e_salvar(ta, tb):
+                # Roda a sua função matemática original
+                res = self.simulator(ta, tb)
+                # Salva o retorno diretamente na lista do escopo pai
+                resultados_jogos.append({
+                    "resultado": res
+                })
+
             threads = []
 
             for time_a, time_b in (self.matches[rodada]):
                 jogo_thread = threading.Thread(
-                    target=simulator.simulator, 
+                    target=rodar_e_salvar, 
                     args=(self.draft[time_a], self.draft[time_b]) # Passa os times como argumentos
                 )
                 
@@ -443,7 +472,19 @@ class ServidorFantasy:
             print(f"--- TODOS OS JOGOS DA RODADA {rodada+1} ACABARAM ---")
             [self.clientes_conectados[i].exibir_draft() for i in range(MAX_CLIENTES)]
 
+            time.sleep(3)
+            
+            #CRIANDO JSON
+            match_end = {
+                'tipo': "FINAL_RODADA",
+                'rodada': rodada+1,
+                'match': resultados_jogos
+            }
+            self.broadcast(match_end)
+
             self.resultado_parcial()
+
+            time.sleep(5)
         ##FINAL DA TEMPORADA
 
         self.resultados_finais()
@@ -451,7 +492,7 @@ class ServidorFantasy:
         time.sleep(1)
         self.broadcast({
             'tipo': "SERVIDOR",
-            'dados': "OBRIGADO POR JOGAR!"
+            'dados': "\nOBRIGADO POR JOGAR!"
         })
 
 # A função de testes pode continuar fora da classe, 
