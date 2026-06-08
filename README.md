@@ -36,6 +36,11 @@ Para execuções mais simples, é possível alterar o Número de Times (Max de 3
 
 **Com o servidor rodando, é só conectar os clientes, escolher o seu nome de usuário na partida, draftar os seus jogadores favoritos e torcer!**
 
+### DESEMPENHO
+Em um teste de overload de clientes, o sistema conseguiu aceitar corretamente todos os clientes em um teste com 250 bots entrando ao mesmo tempo, em 10.10 segundos
+
+Em um outro teste, 50 bots enviando 50 mensagens cada em um fluxo acelerado, simultâneamente, também não teve nenhum problema de recebimento e performance 
+
 
 ## FUNCIONALIDADES IMPLEMENTADAS
 1. A funcionalidade base é o simulador, os dados usados são da última temporada regular da NBA, e todo o sistema é feito para tentar uma reprodução completamente aleatória dos eventos de uma partida em tempo real. Isso pode ser visto melhor no *seasoon/simulator.py*
