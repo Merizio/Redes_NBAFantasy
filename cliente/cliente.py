@@ -64,7 +64,7 @@ class ClienteFantasy:
 
                     ## IDENTIFICAÇÃO DO SERVIDOR
                     if tipo == "SERVIDOR":
-                        print(f"SERVIDOR: {pacote.get('dados')}")
+                        print(f"[SERVIDOR]: {pacote.get('dados')}")
                         # Se o servidor enviou o ID atribuído a este cliente
                         if "Você é o" in pacote.get('dados'):
                             # Extrai o ID do texto (Ex: "Player_1")
@@ -124,7 +124,7 @@ class ClienteFantasy:
                             print(f"Em {total_jogadores-i}º Lugar:")
                             time.sleep(1)
                             print(f"---{chave}---")
-                            print(resultado)
+                            print(f"{resultado}\n")
                             time.sleep(2)
 
 

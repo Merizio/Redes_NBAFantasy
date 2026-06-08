@@ -88,13 +88,13 @@ class ServidorFantasy:
 
         resultado.sort(key=lambda Player: Player.points, reverse=True)
         for i in range(MAX_CLIENTES):
-            print(f"{i+1}º Lugar!\n{resultado[i].id} = {(resultado[i].points/MAX_RODADAS):.1f} pontos")
+            print(f"{i+1}º Lugar!\n{resultado[i].nick} = {(resultado[i].points/MAX_RODADAS):.1f} pontos")
 
         resultados = {
-            self.clientes_conectados[i].nick:
-                f"{(resultado[i].points/MAX_RODADAS):.1f} pontos"
-            for i in range(MAX_CLIENTES)
+            jogador.nick: f"{(jogador.points/MAX_RODADAS):.1f} pontos"
+            for jogador in resultado
         }
+
         self.broadcast({
             'tipo': 'RESULTADO_FINAL',
             'lista': resultados
@@ -218,7 +218,7 @@ class ServidorFantasy:
                     print(event_json)
 
                 #IDEIA DE TEMPO REAL
-                #time.sleep(0.05)
+                time.sleep(0.05)
 
         if time_A.pontos <time_B.pontos:
             for jogador in (time_B.titulares + time_B.reservas):
@@ -284,10 +284,11 @@ class ServidorFantasy:
                         if tipo_evento == "CHAT":
                             msg_chat = {
                                 "tipo": "CHAT_BROADCAST",
-                                "remetente": cliente.id,
+                                "remetente": cliente.nick,
                                 "mensagem": pacote.get("mensagem")
                             }
                             self.broadcast(msg_chat)
+                            print(pacote.get('mensagem'))
                         
                         # --- LÓGICA DE TURNO E DRAFT ---
                         elif tipo_evento == "DRAFT_ESCOLHA":
@@ -492,7 +493,7 @@ class ServidorFantasy:
         time.sleep(1)
         self.broadcast({
             'tipo': "SERVIDOR",
-            'dados': "\nOBRIGADO POR JOGAR!"
+            'dados': "OBRIGADO POR JOGAR!"
         })
 
 # A função de testes pode continuar fora da classe, 
