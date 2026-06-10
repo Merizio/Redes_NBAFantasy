@@ -62,3 +62,13 @@ Em um outro teste, 50 bots enviando 50 mensagens cada em um fluxo acelerado, sim
 ## COISAS PARA UM FUTURO UM POUCO MAIS DISTANTE
 - interface real
 - jogadores com imagem
+
+## PROTÓTIPO DE INTERFACE
+
+![tela incial](Prototipos/inicio.png)
+
+![Escolha de Jogador](Prototipos/selection.png)
+
+![time fechado](Prototipos/time.png)
+
+![fim de jogo](Prototipos/resultado.png)
