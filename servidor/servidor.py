@@ -83,11 +83,11 @@ class ServidorFantasy:
         
     def resultados_finais(self):
         resultado = list()
-        for i in range(MAX_CLIENTES):
+        for i in range(len(self.clientes_conectados)):
             resultado.append(self.clientes_conectados[i])
 
         resultado.sort(key=lambda Player: Player.points, reverse=True)
-        for i in range(MAX_CLIENTES):
+        for i in range(len(self.clientes_conectados)):
             print(f"{i+1}º Lugar!\n{resultado[i].nick} = {(resultado[i].points/MAX_RODADAS):.1f} pontos")
 
         resultados = {
@@ -266,7 +266,7 @@ class ServidorFantasy:
             while True:
                 dados = cliente.conexao.recv(4096)
                 if not dados:
-                    print(f"[DESCONECTADO] {cliente.id} desconectou-se.")
+                    print(f"[DESCONECTADO] {cliente.nick} desconectou-se.")
                     break
 
                 buffer += dados.decode('utf-8')
@@ -325,7 +325,7 @@ class ServidorFantasy:
                                     })
                                     
                                     # 4. Passa o turno
-                                    self.turno_atual_index = (self.turno_atual_index + 1) % MAX_CLIENTES
+                                    self.turno_atual_index = (self.turno_atual_index + 1) % len(self.clientes_conectados)
                             
                             # Anuncia o novo turno (fora do lock para não segurar outras operações atoa)
                             if self.n_rodadas>1 and encontrado:
@@ -372,11 +372,10 @@ class ServidorFantasy:
 
             novo_Player = player.Player(contador_ids, nick_escolhido, conexao)
             self.clientes_conectados.append(novo_Player)
-
-            contador_ids += 1
             
             print(f"[NOVA CONEXÃO] ({contador_ids}) {nick_escolhido} entrou. ({len(self.clientes_conectados)}/{MAX_CLIENTES})")
-            
+            contador_ids += 1
+
             conexao.sendall((json.dumps({
                 "tipo": "SERVIDOR", 
                 "dados": f"Na sala de espera ({len(self.clientes_conectados)}/{MAX_CLIENTES}). Você é o {novo_Player.nick}."
@@ -465,13 +464,13 @@ class ServidorFantasy:
                 jogo_thread.join()
 
             
-            for i in range(MAX_CLIENTES):
+            for i in range(len(self.clientes_conectados)):
                 for jogador_draft in self.clientes_conectados[i].draft:
                     self.clientes_conectados[i].atribuir_points(jogador_draft)
             [self.reset_team(self.draft[i]) for i in range(NUMERO_TIMES)]
                 
             print(f"--- TODOS OS JOGOS DA RODADA {rodada+1} ACABARAM ---")
-            [self.clientes_conectados[i].exibir_draft() for i in range(MAX_CLIENTES)]
+            [self.clientes_conectados[i].exibir_draft() for i in range(len(self.clientes_conectados))]
 
             time.sleep(3)
             
